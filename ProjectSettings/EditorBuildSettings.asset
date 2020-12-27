@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/ExampleScene_redone.unity
+    guid: e3ed7eb93247f0d408cd06dae337a26c
   m_configObjects: {}

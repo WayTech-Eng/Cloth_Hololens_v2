@@ -52,6 +52,9 @@ namespace Obi
         private float[] arry = new float[50];
         private float[] arrz = new float[50];
 
+        public Vector3 pick;
+        public Vector3 end;
+
         void Awake()
         {
             lastMousePos = Input.mousePosition;
@@ -60,7 +63,8 @@ namespace Obi
         void LateUpdate()
         {
             //Theirs();
-            Mine();
+            //Mine();
+            Updater();
             lastMousePos = Input.mousePosition;
         }
 
@@ -165,6 +169,234 @@ namespace Obi
 
                 // Click:
                 if ((Input.GetKey("return")) && (pickedParticleIndex < 0))
+                {
+                    pickedParticleIndex = -1;
+
+                    Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+                    float closestMu = float.MaxValue;
+                    float closestDistance = float.MaxValue;
+
+                    Matrix4x4 solver2World = solver.transform.localToWorldMatrix;
+
+                    // Find the closest particle hit by the ray:                    
+                    print("Pick: ");
+                    print(pick);
+                    double smallest = float.MaxValue;
+                    for (int i = 0; i < solver.renderablePositions.count; ++i)
+                    {
+                        Vector3 worldPos = solver2World.MultiplyPoint3x4(solver.renderablePositions[i]);
+                        double dx = pick.x - worldPos.x;
+                        double dz = pick.z - worldPos.z;
+                        double dist = Math.Sqrt(dx * dx + dz * dz);
+
+                        if (dist < smallest)
+                        {
+                            smallest = dist;
+                            pickedParticleIndex = i;
+                        }
+                    }
+
+                    if (pickedParticleIndex >= 0)
+                    {
+                        if (OnParticlePicked != null)
+                        {
+                            trailingLocation = new Vector3(pick.x, pick.y, pick.z);
+
+                            OnParticlePicked.Invoke(new ParticlePickEventArgs(pickedParticleIndex, pickLocation));
+                            PathGen();
+
+                            startTime = DateTime.Now;
+                        }
+                    }
+                }
+                else if (pickedParticleIndex >= 0)
+                {
+                    counter++;
+                    int len = arrx.Length;
+                    // Implement switch case to move in y direction first...
+                    // 0 .... move up
+                    // 1 .... move across
+                    // 2 .... move down
+                    //if (counter >= 10)
+                    endTime = DateTime.Now;
+                    double elapsed = ((TimeSpan)(endTime - startTime)).TotalMilliseconds;
+                    if (elapsed > 25)
+                    {
+                        switch (caseswitch)
+                        {
+                            case 0: // Move up
+                                trailingLocation = new Vector3(pick.x, arry[steps], pick.z);
+                                break;
+                            case 1: // Move lateral
+                                trailingLocation = new Vector3(arrx[steps], arry[len - 1], arrz[steps]);
+                                print("Lateral");
+                                break;
+                            case 2: // Move down
+                                trailingLocation = new Vector3(arrx[len - 1], arry[len - 1 - steps], arrz[len - 1]);
+                                print("Down");
+                                break;
+                        }
+                        OnParticleDragged.Invoke(new ParticlePickEventArgs(pickedParticleIndex, trailingLocation));
+                        counter = 0;
+                        steps++;
+                        startTime = DateTime.Now;
+                    }
+                    else
+                    {
+                        OnParticleDragged.Invoke(new ParticlePickEventArgs(pickedParticleIndex, trailingLocation));
+                    }
+
+                    if (steps >= len - 1)
+                    {
+                        Vector3 trailingLocation = new Vector3(arrx[steps], arry[steps], arrz[steps]);
+                        OnParticleReleased.Invoke(new ParticlePickEventArgs(pickedParticleIndex, trailingLocation));
+                        //print("Moving");
+                        steps = 0;
+                        movement = 0;
+                        caseswitch++;
+                        if (caseswitch > 2)
+                        {
+                            caseswitch = 0;
+                            pickedParticleIndex = -1;
+                        }
+                    }
+
+                }
+            }
+        }
+
+        // Mine - callable
+        public void MoveInit()
+        {
+            if (solver != null)
+            {
+                print("Move initialised");
+                pick = GameObject.Find("Pick").transform.position;
+                end = GameObject.Find("End").transform.position;
+                pickLocation = new Vector3(pick.x, pick.y, pick.z);
+                endLocation = new Vector3(end.x, end.y + 1, end.z);
+                //endLocation = new Vector3(pick.x + 2, pick.y + 2, pick.z);
+
+                // Click:
+                if (pickedParticleIndex < 0)
+                {
+                    pickedParticleIndex = -1;
+
+                    Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+                    float closestMu = float.MaxValue;
+                    float closestDistance = float.MaxValue;
+
+                    Matrix4x4 solver2World = solver.transform.localToWorldMatrix;
+
+                    // Find the closest particle hit by the ray:                    
+                    print("Pick: ");
+                    print(pick);
+                    double smallest = float.MaxValue;
+                    for (int i = 0; i < solver.renderablePositions.count; ++i)
+                    {
+                        Vector3 worldPos = solver2World.MultiplyPoint3x4(solver.renderablePositions[i]);
+                        double dx = pick.x - worldPos.x;
+                        double dz = pick.z - worldPos.z;
+                        double dist = Math.Sqrt(dx * dx + dz * dz);
+
+                        if (dist < smallest)
+                        {
+                            smallest = dist;
+                            pickedParticleIndex = i;
+                        }
+                    }
+
+                    if (pickedParticleIndex >= 0)
+                    {
+                        if (OnParticlePicked != null)
+                        {
+                            trailingLocation = new Vector3(pick.x, pick.y, pick.z);
+
+                            OnParticlePicked.Invoke(new ParticlePickEventArgs(pickedParticleIndex, pickLocation));
+                            PathGen();
+
+                            startTime = DateTime.Now;
+                        }
+                    }
+                }
+            }
+        }
+        public void Updater()
+        {
+            if (solver != null)
+            {
+                if (pickedParticleIndex >= 0)
+                {
+                    counter++;
+                    int len = arrx.Length;
+                    // Implement switch case to move in y direction first...
+                    // 0 .... move up
+                    // 1 .... move across
+                    // 2 .... move down
+                    //if (counter >= 10)
+                    endTime = DateTime.Now;
+                    double elapsed = ((TimeSpan)(endTime - startTime)).TotalMilliseconds;
+                    if (elapsed > 25)
+                    {
+                        switch (caseswitch)
+                        {
+                            case 0: // Move up
+                                trailingLocation = new Vector3(pick.x, arry[steps], pick.z);
+                                break;
+                            case 1: // Move lateral
+                                trailingLocation = new Vector3(arrx[steps], arry[len - 1], arrz[steps]);
+                                print("Lateral");
+                                break;
+                            case 2: // Move down
+                                trailingLocation = new Vector3(arrx[len - 1], arry[len - 1 - steps], arrz[len - 1]);
+                                print("Down");
+                                break;
+                        }
+                        OnParticleDragged.Invoke(new ParticlePickEventArgs(pickedParticleIndex, trailingLocation));
+                        counter = 0;
+                        steps++;
+                        startTime = DateTime.Now;
+                    }
+                    else
+                    {
+                        OnParticleDragged.Invoke(new ParticlePickEventArgs(pickedParticleIndex, trailingLocation));
+                    }
+
+                    if (steps >= len - 1)
+                    {
+                        Vector3 trailingLocation = new Vector3(arrx[steps], arry[steps], arrz[steps]);
+                        OnParticleReleased.Invoke(new ParticlePickEventArgs(pickedParticleIndex, trailingLocation));
+                        //print("Moving");
+                        steps = 0;
+                        movement = 0;
+                        caseswitch++;
+                        if (caseswitch > 2)
+                        {
+                            caseswitch = 0;
+                            pickedParticleIndex = -1;
+                        }
+                    }
+
+                }
+            }
+        }
+            
+        public void MineCall()
+        {
+            //print("RUnning...");
+            if (solver != null)
+            {
+                print("RUnning...");
+                var pick = GameObject.Find("Pick").transform.position;
+                var end = GameObject.Find("End").transform.position;
+                pickLocation = new Vector3(pick.x, pick.y, pick.z);
+                endLocation = new Vector3(end.x, end.y + 1, end.z);
+                //endLocation = new Vector3(pick.x + 2, pick.y + 2, pick.z);
+
+                // Click:
+                if(pickedParticleIndex < 0)
                 {
                     pickedParticleIndex = -1;
 

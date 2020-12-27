@@ -10,17 +10,16 @@ public class ResetObi : MonoBehaviour
 	GameObject end;
 	Vector3 pick_orig_pos;
 	Vector3 end_orig_pos;
-	private int a = 1;
-	void Awake()
-	{
-		actor = GetComponent<ObiActor>();
-		pick = GameObject.Find("Pick");
-		end = GameObject.Find("End");
-		pick_orig_pos = pick.transform.position;
-		end_orig_pos = end.transform.position;
-	}
+    void Awake()
+    {
+        actor = GetComponent<ObiActor>();
+        pick = GameObject.Find("Pick");
+        end = GameObject.Find("End");
+        pick_orig_pos = pick.transform.position;
+        end_orig_pos = end.transform.position;
+    }
 
-	void reset()
+    public void reset()
 	{
 
 		if (actor == null || !actor.isLoaded)
@@ -29,9 +28,14 @@ public class ResetObi : MonoBehaviour
 		actor.ResetParticles();
 		pick.transform.position = pick_orig_pos;
 		end.transform.position = end_orig_pos;
-		print("Reset!");
-		
+		print("Reset!");		
 	}
+
+	public void move()
+    {
+		actor.GetComponent<ObiParticlePicker>().MoveInit();
+		print("Moving");
+    }
 
 	private void Update()
 	{
